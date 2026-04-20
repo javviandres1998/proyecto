@@ -1,8 +1,13 @@
 import os
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+# Ruta absoluta al .env junto a este archivo.
+# load_dotenv() sin argumentos busca en el CWD, que en cron es $HOME
+# y nunca encuentra el .env → todas las variables quedan vacías.
+_ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(_ENV_PATH)
 
 
 def _require(key: str) -> str:

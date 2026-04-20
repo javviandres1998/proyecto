@@ -88,7 +88,13 @@ fi
 ok "Archivo de log listo: $LOG_FILE"
 
 # ---------- 6. Construir línea de cron ----------
-CRON_LINE="0 $SEND_HOUR * * * cd $SCRIPT_DIR && $PYTHON_BIN $NEWSLETTER_SCRIPT >> $LOG_FILE 2>&1"
+# Notas sobre la línea generada:
+#   -u  → Python en modo unbuffered: stdout/stderr se escriben de inmediato,
+#          sin quedar atrapados en el buffer si el proceso termina abruptamente.
+#   Sin 'cd': la ruta del .env se resuelve de forma absoluta dentro del script,
+#          así que el directorio de trabajo del cron (normalmente $HOME) no importa.
+#   2>&1 → stderr se mezcla con stdout y ambos van al mismo archivo de log.
+CRON_LINE="0 $SEND_HOUR * * * $PYTHON_BIN -u $NEWSLETTER_SCRIPT >> $LOG_FILE 2>&1"
 CRON_MARKER="# newsletter-ultima-hora"
 
 # ---------- 7. Instalar cron (evitar duplicados) ----------
@@ -102,8 +108,12 @@ else
   NEW_CRON="$EXISTING_CRON"
 fi
 
-# Añadir nueva línea
-printf "%s\n%s %s\n" "$NEW_CRON" "$CRON_MARKER" "$CRON_LINE" | crontab -
+# Añadir nueva línea (marcador en línea separada para que crontab -l sea legible)
+{
+  echo "$NEW_CRON"
+  echo "$CRON_MARKER"
+  echo "$CRON_LINE"
+} | grep -v '^$' | crontab -
 
 ok "Cron instalado correctamente"
 

@@ -12,6 +12,15 @@ import time
 from datetime import datetime, timedelta, timezone
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from pathlib import Path
+
+# Insertar el directorio del script en sys.path ANTES de cualquier import
+# local. Cuando cron ejecuta "python3 /ruta/absoluta/newsletter.py" Python
+# pone el directorio del script en sys.path[0], pero hacerlo explícito evita
+# cualquier edge case con entornos virtuales o PYTHONPATH raros en el VPS.
+_PROJECT_DIR = Path(__file__).resolve().parent
+if str(_PROJECT_DIR) not in sys.path:
+    sys.path.insert(0, str(_PROJECT_DIR))
 
 import pytz
 import requests
@@ -22,23 +31,17 @@ import config
 # Logging
 # ---------------------------------------------------------------------------
 
-def setup_logging(test_mode: bool = False) -> logging.Logger:
+def setup_logging() -> logging.Logger:
     logger = logging.getLogger("newsletter")
     logger.setLevel(logging.DEBUG)
     fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
 
-    # Consola siempre activa
+    # Toda la salida va a stdout. El cron redirige con ">> log 2>&1",
+    # así que tanto stdout como stderr quedan en el mismo archivo de log.
+    # Un FileHandler adicional crearía entradas duplicadas en el log.
     ch = logging.StreamHandler(sys.stdout)
     ch.setFormatter(fmt)
     logger.addHandler(ch)
-
-    if not test_mode:
-        try:
-            fh = logging.FileHandler(config.LOG_FILE)
-            fh.setFormatter(fmt)
-            logger.addHandler(fh)
-        except PermissionError:
-            logger.warning("Sin permiso para escribir en %s — solo log en consola.", config.LOG_FILE)
 
     return logger
 
@@ -336,8 +339,9 @@ def main():
     parser.add_argument("--test", action="store_true", help="Modo test: envía el email sin esperar el horario")
     args = parser.parse_args()
 
-    logger = setup_logging(test_mode=args.test)
+    logger = setup_logging()
     logger.info("=== Iniciando Newsletter ÚLTIMA HORA (modo %s) ===", "TEST" if args.test else "producción")
+    logger.info(".env cargado desde: %s", _PROJECT_DIR / ".env")
 
     tz = pytz.timezone(config.TIMEZONE)
     now = datetime.now(tz)
