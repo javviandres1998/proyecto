@@ -28,40 +28,40 @@ def check(label: str, ok: bool, detail: str = "") -> bool:
 
 
 def test_news_api() -> bool:
-    print("\n🌐 1. Conexión a NewsAPI.org")
+    print("\n🌐 1. Conexión a GNews API")
     since = (datetime.now(timezone.utc) - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
     try:
         resp = requests.get(
             config.NEWS_API_URL,
             params={
-                "apiKey": config.NEWS_API_KEY,
-                "q": "inteligencia artificial OR AI",
-                "sortBy": "publishedAt",
+                "apikey": config.NEWS_API_KEY,
+                "q": "inteligencia artificial | OpenAI | Anthropic",
+                "sortby": "publishedAt",
                 "from": since,
-                "pageSize": 3,
-                "language": "es",
+                "max": 3,
+                "lang": "es",
             },
             timeout=15,
         )
         resp.raise_for_status()
         data = resp.json()
-        if data.get("status") != "ok":
-            return check("NewsAPI", False, f"Status: {data.get('status')} — {data.get('message','')}")
+        if "errors" in data:
+            return check("GNews", False, f"Error: {data['errors']}")
         count = len(data.get("articles", []))
-        return check("NewsAPI", True, f"Respuesta OK · {count} artículos de prueba obtenidos")
+        return check("GNews", True, f"Respuesta OK · {count} artículos de prueba obtenidos")
     except requests.exceptions.ConnectionError:
-        return check("NewsAPI", False, "Sin conexión a Internet o DNS fallido")
+        return check("GNews", False, "Sin conexión a Internet o DNS fallido")
     except requests.exceptions.Timeout:
-        return check("NewsAPI", False, "Timeout — el servidor tardó demasiado")
+        return check("GNews", False, "Timeout — el servidor tardó demasiado")
     except requests.exceptions.HTTPError as exc:
         code = exc.response.status_code if exc.response else "?"
-        if code == 401:
-            return check("NewsAPI", False, "API Key inválida (401 Unauthorized)")
+        if code == 403:
+            return check("GNews", False, "API Key inválida o expirada (403 Forbidden)")
         if code == 429:
-            return check("NewsAPI", False, "Límite de peticiones alcanzado (429 Too Many Requests)")
-        return check("NewsAPI", False, f"HTTP {code}")
+            return check("GNews", False, "Límite de peticiones alcanzado (429 Too Many Requests)")
+        return check("GNews", False, f"HTTP {code}")
     except Exception as exc:
-        return check("NewsAPI", False, str(exc))
+        return check("GNews", False, str(exc))
 
 
 def test_smtp() -> bool:

@@ -55,13 +55,14 @@ def fetch_news(query: str, logger: logging.Logger, max_retries: int = 3) -> list
     since = datetime.now(tz) - timedelta(hours=24)
     since_str = since.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+    # GNews API — funciona desde servidores en plan gratuito (100 req/día)
     params = {
-        "apiKey": config.NEWS_API_KEY,
+        "apikey": config.NEWS_API_KEY,
         "q": query,
-        "sortBy": "publishedAt",
+        "sortby": "publishedAt",
         "from": since_str,
-        "pageSize": config.MAX_ARTICLES_PER_CATEGORY,
-        "language": config.NEWS_LANGUAGE.split(",")[0],  # NewsAPI acepta un idioma por llamada
+        "max": config.MAX_ARTICLES_PER_CATEGORY,
+        "lang": config.NEWS_LANGUAGE.split(",")[0],
     }
 
     articles = []
@@ -71,12 +72,12 @@ def fetch_news(query: str, logger: logging.Logger, max_retries: int = 3) -> list
             resp.raise_for_status()
             data = resp.json()
 
-            if data.get("status") != "ok":
-                raise ValueError(f"API devolvió status: {data.get('status')} — {data.get('message', '')}")
+            if "errors" in data:
+                raise ValueError(f"GNews error: {data['errors']}")
 
             articles = [
                 a for a in data.get("articles", [])
-                if a.get("title") and a.get("url") and "[Removed]" not in a.get("title", "")
+                if a.get("title") and a.get("url")
             ]
             logger.info("Categoría '%s': %d artículos obtenidos.", query[:60], len(articles))
             return articles
@@ -147,7 +148,7 @@ def _article_card(article: dict, accent: str) -> str:
     url = article.get("url", "#")
     source = (article.get("source") or {}).get("name", "Fuente desconocida")
     pub_date = format_article_date(article.get("publishedAt", ""))
-    img = article.get("urlToImage", "")
+    img = article.get("image", "") or article.get("urlToImage", "")
 
     img_block = ""
     if img:
@@ -263,7 +264,7 @@ def build_html(news: dict[str, list[dict]], send_time: datetime) -> str:
                 Newsletter enviado el {date_str} a las {time_str} ({tz_name})
               </p>
               <p style="margin:0;font-size:12px;color:#4a4a60;">
-                Noticias obtenidas automáticamente · Fuentes: NewsAPI.org
+                Noticias obtenidas automáticamente · Fuentes: GNews API
               </p>
             </td>
           </tr>

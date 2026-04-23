@@ -18,10 +18,10 @@ def _require(key: str) -> str:
     return value
 
 
-# API de noticias
+# API de noticias (GNews — funciona desde servidores en plan gratuito)
 NEWS_API_KEY = _require("NEWS_API_KEY")
-NEWS_API_URL = "https://newsapi.org/v2/everything"
-NEWS_LANGUAGE = os.getenv("NEWS_LANGUAGE", "es,en")
+NEWS_API_URL = "https://gnews.io/api/v4/search"
+NEWS_LANGUAGE = os.getenv("NEWS_LANGUAGE", "es")
 MAX_ARTICLES_PER_CATEGORY = int(os.getenv("MAX_ARTICLES_PER_CATEGORY", "5"))
 
 # SMTP
@@ -41,22 +41,22 @@ TIMEZONE = os.getenv("TIMEZONE", "Europe/Madrid")
 # Logs
 LOG_FILE = os.getenv("LOG_FILE", "/var/log/newsletter.log")
 
-# Queries por categoría
+# Queries por categoría — formato GNews (| = OR, espacio = AND, "frase exacta")
 CATEGORY_QUERIES = {
     "urgente": (
-        '"breaking news" AND (AI OR "artificial intelligence" OR OpenAI OR Anthropic '
-        'OR "Google AI" OR "inteligencia artificial")'
+        '"breaking news" "inteligencia artificial" | "breaking news" OpenAI | '
+        '"breaking news" Anthropic | "breaking news" "artificial intelligence"'
     ),
     "ia": (
-        '"inteligencia artificial" OR "artificial intelligence" OR "machine learning" '
-        'OR "large language model" OR LLM OR "generative AI" OR "IA generativa"'
+        '"inteligencia artificial" | "artificial intelligence" | '
+        '"machine learning" | "large language model" | "generative AI" | "IA generativa"'
     ),
     "empresas": (
-        "OpenAI OR Anthropic OR Claude OR ChatGPT OR Gemini OR DeepMind "
-        'OR "Meta AI" OR "Microsoft AI" OR Grok OR xAI OR "GPT-5" OR "GPT-4"'
+        "OpenAI | Anthropic | ChatGPT | Gemini | DeepMind | "
+        '"Meta AI" | "Microsoft AI" | Grok | xAI'
     ),
     "tecnologia": (
-        "tecnología OR technology OR smartphone OR chip OR semiconductor "
-        "OR ciberseguridad OR cybersecurity OR robotics OR robótica OR quantum"
+        "tecnología | smartphone | ciberseguridad | robótica | "
+        "technology | cybersecurity | robotics | semiconductor | quantum"
     ),
 }
