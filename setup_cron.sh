@@ -32,26 +32,38 @@ if [[ ! -f "$NEWSLETTER_SCRIPT" ]]; then
 fi
 ok "newsletter.py encontrado"
 
-# ---------- 2. Detectar Python ----------
+# ---------- 2. Detectar Python (venv tiene prioridad) ----------
+VENV_PYTHON="$SCRIPT_DIR/venv/bin/python"
 PYTHON_BIN=""
-for candidate in python3 python3.11 python3.10 python3.9; do
-  if command -v "$candidate" &>/dev/null; then
-    PYTHON_BIN="$(command -v "$candidate")"
-    break
-  fi
-done
+
+if [[ -x "$VENV_PYTHON" ]]; then
+  PYTHON_BIN="$VENV_PYTHON"
+  ok "Entorno virtual encontrado: $PYTHON_BIN"
+else
+  for candidate in python3 python3.11 python3.10 python3.9; do
+    if command -v "$candidate" &>/dev/null; then
+      PYTHON_BIN="$(command -v "$candidate")"
+      break
+    fi
+  done
+fi
 
 if [[ -z "$PYTHON_BIN" ]]; then
   fail "No se encontró python3. Instala con: sudo apt install python3"
 fi
-ok "Python encontrado: $PYTHON_BIN ($(${PYTHON_BIN} --version))"
+ok "Python: $PYTHON_BIN ($(${PYTHON_BIN} --version))"
 
 # ---------- 3. Verificar dependencias ----------
 echo ""
 echo "Verificando dependencias Python…"
 if ! "$PYTHON_BIN" -c "import requests, dotenv, pytz" 2>/dev/null; then
-  warn "Faltan dependencias. Instalando desde requirements.txt…"
-  "$PYTHON_BIN" -m pip install -r "$SCRIPT_DIR/requirements.txt" --quiet
+  if [[ -x "$VENV_PYTHON" ]]; then
+    warn "Faltan dependencias. Instalando en el venv…"
+    "$SCRIPT_DIR/venv/bin/pip" install -r "$SCRIPT_DIR/requirements.txt" --quiet
+  else
+    warn "Faltan dependencias. Instalando…"
+    "$PYTHON_BIN" -m pip install -r "$SCRIPT_DIR/requirements.txt" --quiet
+  fi
   ok "Dependencias instaladas"
 else
   ok "Dependencias OK"
