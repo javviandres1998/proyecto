@@ -58,7 +58,6 @@ def fetch_news(query: str, logger: logging.Logger, max_retries: int = 3) -> list
     params = {
         "apikey": config.NEWS_API_KEY,
         "q": query,
-        "sortby": "publishedAt",
         "max": config.MAX_ARTICLES_PER_CATEGORY,
         "lang": config.NEWS_LANGUAGE.split(",")[0],
     }
