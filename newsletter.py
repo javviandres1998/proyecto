@@ -51,16 +51,14 @@ def setup_logging() -> logging.Logger:
 # ---------------------------------------------------------------------------
 
 def fetch_news(query: str, logger: logging.Logger, max_retries: int = 3) -> list[dict]:
-    tz = pytz.timezone(config.TIMEZONE)
-    since = datetime.now(tz) - timedelta(hours=24)
-    since_str = since.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-    # GNews API — funciona desde servidores en plan gratuito (100 req/día)
+    # GNews API — funciona desde servidores en plan gratuito (100 req/día).
+    # El plan gratuito no soporta el parámetro 'from'; devuelve 0 resultados
+    # si se incluye. GNews aplica un retraso de 12h en el plan gratuito,
+    # lo que es suficiente para un newsletter diario.
     params = {
         "apikey": config.NEWS_API_KEY,
         "q": query,
         "sortby": "publishedAt",
-        "from": since_str,
         "max": config.MAX_ARTICLES_PER_CATEGORY,
         "lang": config.NEWS_LANGUAGE.split(",")[0],
     }
