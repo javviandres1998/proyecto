@@ -41,10 +41,11 @@ TIMEZONE = os.getenv("TIMEZONE", "Europe/Madrid")
 # Logs
 LOG_FILE = os.getenv("LOG_FILE", "/var/log/newsletter.log")
 
-# Queries simples sin comillas ni operadores — GNews free plan solo acepta keywords básicos
+# Una keyword por categoría — GNews trata los espacios como AND,
+# por lo que múltiples palabras exigen que aparezcan TODAS en el artículo.
 CATEGORY_QUERIES = {
-    "urgente":    "breaking artificial intelligence OpenAI Anthropic urgent AI",
-    "ia":         "artificial intelligence machine learning LLM generative AI Claude Gemini",
-    "empresas":   "OpenAI Anthropic ChatGPT Gemini DeepMind Microsoft Grok xAI",
-    "tecnologia": "technology smartphone cybersecurity robotics semiconductor chip",
+    "urgente":    "AI",
+    "ia":         "ChatGPT",
+    "empresas":   "OpenAI",
+    "tecnologia": "technology",
 }
