@@ -41,22 +41,11 @@ TIMEZONE = os.getenv("TIMEZONE", "Europe/Madrid")
 # Logs
 LOG_FILE = os.getenv("LOG_FILE", "/var/log/newsletter.log")
 
-# Queries por categoría — formato GNews (| = OR, espacio = AND, "frase exacta")
+# Queries por categoría — GNews usa palabras separadas por espacio (OR implícito)
+# y comillas para frases exactas. No soporta | ni OR explícito.
 CATEGORY_QUERIES = {
-    "urgente": (
-        '"breaking news" "inteligencia artificial" | "breaking news" OpenAI | '
-        '"breaking news" Anthropic | "breaking news" "artificial intelligence"'
-    ),
-    "ia": (
-        '"inteligencia artificial" | "artificial intelligence" | '
-        '"machine learning" | "large language model" | "generative AI" | "IA generativa"'
-    ),
-    "empresas": (
-        "OpenAI | Anthropic | ChatGPT | Gemini | DeepMind | "
-        '"Meta AI" | "Microsoft AI" | Grok | xAI'
-    ),
-    "tecnologia": (
-        "tecnología | smartphone | ciberseguridad | robótica | "
-        "technology | cybersecurity | robotics | semiconductor | quantum"
-    ),
+    "urgente":    '"breaking news" "artificial intelligence" OpenAI Anthropic',
+    "ia":         '"inteligencia artificial" "machine learning" "large language model" Gemini Claude',
+    "empresas":   "OpenAI Anthropic ChatGPT Gemini DeepMind Microsoft xAI Grok",
+    "tecnologia": "tecnologia smartphone ciberseguridad robotica cybersecurity semiconductor",
 }

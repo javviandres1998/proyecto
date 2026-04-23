@@ -82,6 +82,13 @@ def fetch_news(query: str, logger: logging.Logger, max_retries: int = 3) -> list
             logger.info("Categoría '%s': %d artículos obtenidos.", query[:60], len(articles))
             return articles
 
+        except requests.exceptions.HTTPError as exc:
+            code = exc.response.status_code if exc.response else 0
+            wait = 60 if code == 429 else 2 ** attempt
+            logger.warning("Intento %d/%d fallido (HTTP %s) para query '%s'. Esperando %ds…",
+                           attempt, max_retries, code, query[:60], wait)
+            if attempt < max_retries:
+                time.sleep(wait)
         except (requests.RequestException, ValueError) as exc:
             logger.warning("Intento %d/%d fallido para query '%s': %s", attempt, max_retries, query[:60], exc)
             if attempt < max_retries:
@@ -94,8 +101,9 @@ def fetch_news(query: str, logger: logging.Logger, max_retries: int = 3) -> list
 def collect_all_news(logger: logging.Logger) -> dict[str, list[dict]]:
     results: dict[str, list[dict]] = {}
     seen_urls: set[str] = set()
+    categories = list(config.CATEGORY_QUERIES.items())
 
-    for category, query in config.CATEGORY_QUERIES.items():
+    for i, (category, query) in enumerate(categories):
         articles = fetch_news(query, logger)
         unique = []
         for art in articles:
@@ -104,6 +112,9 @@ def collect_all_news(logger: logging.Logger) -> dict[str, list[dict]]:
                 seen_urls.add(url)
                 unique.append(art)
         results[category] = unique[: config.MAX_ARTICLES_PER_CATEGORY]
+        # Pausa entre peticiones para respetar el rate limit de GNews
+        if i < len(categories) - 1:
+            time.sleep(2)
 
     return results
 
