@@ -24,6 +24,7 @@ if str(_PROJECT_DIR) not in sys.path:
 
 import pytz
 import requests
+from deep_translator import GoogleTranslator
 
 import config
 
@@ -108,7 +109,14 @@ def collect_all_news(logger: logging.Logger) -> dict[str, list[dict]]:
             if url and url not in seen_urls:
                 seen_urls.add(url)
                 unique.append(art)
-        results[category] = unique[: config.MAX_ARTICLES_PER_CATEGORY]
+        unique = unique[: config.MAX_ARTICLES_PER_CATEGORY]
+
+        logger.info("Traduciendo %d artículos de '%s'…", len(unique), category)
+        translated = []
+        for art in unique:
+            translated.append(translate_article(art, logger))
+            time.sleep(0.5)  # pausa entre traducciones para no saturar Google Translate
+        results[category] = translated
         # Pausa entre peticiones para respetar el rate limit de GNews
         if i < len(categories) - 1:
             time.sleep(2)
@@ -126,6 +134,27 @@ CATEGORY_META = {
     "empresas":  {"icon": "🏢", "label": "EMPRESAS TECH",            "color": "#34d399", "bg": "#0a1a12"},
     "tecnologia":{"icon": "💻", "label": "TECNOLOGÍA GENERAL",       "color": "#60a5fa", "bg": "#0a0f1a"},
 }
+
+# ---------------------------------------------------------------------------
+# Traducción
+# ---------------------------------------------------------------------------
+
+def translate(text: str, logger: logging.Logger) -> str:
+    if not text or not text.strip():
+        return text
+    try:
+        return GoogleTranslator(source="auto", target="es").translate(text[:4999])
+    except Exception as exc:
+        logger.debug("Traducción fallida (se usa texto original): %s", exc)
+        return text
+
+
+def translate_article(article: dict, logger: logging.Logger) -> dict:
+    translated = dict(article)
+    translated["title"] = translate(article.get("title", ""), logger)
+    translated["description"] = translate(article.get("description", ""), logger)
+    return translated
+
 
 MONTHS_ES = [
     "", "enero", "febrero", "marzo", "abril", "mayo", "junio",
